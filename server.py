@@ -14,33 +14,37 @@ class ClientThread(Thread):
         print("[+] New server socket thread started for " + ip + ":" + str(port))
 
     def run(self):
-        data = conn.recv(2048).decode()
-        username = data.split(',')[0]
-        password = data.split(',')[1]
-        if username == "root" and password == "root":
-            conn.send("True".encode())
-            while True:
-                data = conn.recv(2048).decode()
+        Flag = "false"
+        while Flag =="false":
+            data = conn.recv(2048).decode()
+            print(data)
+            username = data.split(',')[0]
+            password = data.split(',')[1]
+            if username == "root" and password == "root":
+                conn.send("True".encode())
+                Flag = "True"
+            else:
+                conn.send("False".encode())
+        while True:
+            data = conn.recv(2048).decode()
 
-                print("Server received data:", data)
-                MessageList = data.split()
-                Order = MessageList[0]
-                if Order == 'Quit':
-                    break
-                if Order == 'LIST':
-                    ClientThread.list_server_files(self)
-                    print("List")
-                if Order == 'RETR':
-                    ClientThread.retrive_file(self, MessageList[1])
-                    print("retrive")
-                if Order == 'DELE':
-                    ClientThread.delete_file(self, MessageList[1])
-                    print("delete")
-                if Order == 'RMD':
-                    ClientThread.delete_all_cached_files(self)
-                    print("RMD")
-        else:
-            conn.send("False".encode())
+            print("Server received data:", data)
+            MessageList = data.split()
+            Order = MessageList[0]
+            if Order == 'Quit':
+                break
+            if Order == 'LIST':
+                ClientThread.list_server_files(self)
+                print("List")
+            if Order == 'RETR':
+                ClientThread.retrive_file(self, MessageList[1])
+                print("retrive")
+            if Order == 'DELE':
+                ClientThread.delete_file(self, MessageList[1])
+                print("delete")
+            if Order == 'RMD':
+                ClientThread.delete_all_cached_files(self)
+                print("RMD")
 
                 # MESSAGE = input("Server: Enter Response from Server/Enter Quit:")
                 # if MESSAGE == 'Quit':
