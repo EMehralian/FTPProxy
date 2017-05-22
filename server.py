@@ -29,16 +29,29 @@ class ClientThread(Thread):
                 ClientThread.retrive_file(self, MessageList[1])
                 print("retrive")
             if Order == 'DELE':
+                ClientThread.delete_file(self, MessageList[1])
                 print("delete")
             if Order == 'RMD':
+                ClientThread.delete_all_cached_files(self)
                 print("RMD")
                 # MESSAGE = input("Server: Enter Response from Server/Enter Quit:")
                 # if MESSAGE == 'Quit':
                 #     break
 
                 # conn.send(MESSAGE.encode())  # echo
-    def delete_file(self,file_name):
-        os.remove(file_name)
+
+    def delete_file(self, file_name):
+        local_files_list = self.local_files()
+        if (file_name in local_files_list):
+            os.remove("File/" + file_name)
+        else:
+            print("no such file in cache proxy!")
+
+    def delete_all_cached_files(self):
+        local_files_list = self.local_files()
+        for file in local_files_list:
+            self.delete_file(file)
+
     def retrive_file(self, file_name):
         host = socket.gethostbyname('ceit.aut.ac.ir')
         request = "GET /~94131090/CN1_Project_Files/" + str(file_name) + " HTTP/1.1\r\nHost: " + host + "\r\n\r\n"
