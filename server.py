@@ -15,7 +15,7 @@ class ClientThread(Thread):
 
     def run(self):
         Flag = "false"
-        while Flag =="false":
+        while Flag == "false":
             data = conn.recv(2048).decode()
             print(data)
             username = data.split(',')[0]
@@ -59,8 +59,8 @@ class ClientThread(Thread):
         for file in proxy_files:
             if file == file_name:
                 print("in local")
+                ClientThread.send_file_from_proxy(self, file_name)
                 break
-
         print("connecting to server")
         host = socket.gethostbyname('ceit.aut.ac.ir')
         port = 80
@@ -68,10 +68,9 @@ class ClientThread(Thread):
         ServerSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         ServerSocket.connect((host, port))
         ServerSocket.send(request.encode())
-        with open(file_name, 'wb') as f:
+        with open("Cache/" + file_name, 'wb') as f:
             print('receiving data...')
             data = ServerSocket.recv(1024)
-            # data = re.compile('.*\n\n', ' ', data)
             linend = re.compile(b'\r\n\r\n')
             data = (linend.split(data, 1))
             data = data[1]
@@ -79,18 +78,28 @@ class ClientThread(Thread):
             while True:
                 print('receiving data...')
                 data = ServerSocket.recv(1024)
-                # data = re.compile('.*\n\n', ' ', data)
                 if not data:
                     break
-                linend = re.compile(b'\r\n\r\n')
-                data = (linend.split(data, 1))
-                data = data[1]
-                print(data)
-                # write data to a file
-                f.write(data[1])
+                f.write(data)
+        ClientThread.send_file_from_proxy(self, file_name)
+
+    def send_file_from_proxy(self, file_name):
+        print("start to send")
+        f = open("Cache/" + file_name, 'rb')
+        l = f.read(1024)
+        data = l
+        while (l):
+            # dataConn.send(l)
+            l = f.read(1024)
+            data += l
+        print("file readed")
+        dataConn.send(str(len(data)).encode())
+        print(len(data))
+        dataConn.send(data)
+        f.close()
 
     def local_files(self):
-        mypath = "File/"
+        mypath = "Cache/"
         onlyfiles = [f for f in listdir(mypath) if isfile(join(mypath, f))]
         return onlyfiles
 
@@ -116,22 +125,28 @@ class ClientThread(Thread):
         urls.pop(0)
         urls.pop(0)
         print(urls)
-        filelist = ','.join(urls)
+        filelist = '&'.join(urls)
+        listSize = len(filelist)
+        print(listSize)
+        dataConn.send(str(listSize).encode())
         dataConn.send(filelist.encode())
         ServerSocket.close()
-        dataConn.close()
 
     def delete_file(self, file_name):
         local_files_list = self.local_files()
+        print(local_files_list)
         if (file_name in local_files_list):
-            os.remove("File/" + file_name)
+            os.remove("Cache/" + file_name)
+            dataConn.send("selected file successfully deleted".encode())
         else:
             print("no such file in cache proxy!")
+            dataConn.send("no such file in cache proxy! ".encode())
 
     def delete_all_cached_files(self):
         local_files_list = self.local_files()
         for file in local_files_list:
             self.delete_file(file)
+
 
 # Multithreaded Python server : TCP Server Socket Program Stub
 TCP_IP = '127.0.0.1'
