@@ -4,13 +4,15 @@ from threading import Thread
 from os import listdir
 from os.path import isfile, join
 import re
-
+from time import gmtime, strftime
 
 class ClientThread(Thread):
     def __init__(self, ip, port):
         Thread.__init__(self)
         self.ip = ip
         self.port = port
+
+        log.write(strftime("%Y-%m-%d %H:%M:%S", gmtime())+"[+] New server socket thread started for " + ip + ":" + str(port)+"\n")
         print("[+] New server socket thread started for " + ip + ":" + str(port))
 
     def run(self):
@@ -23,33 +25,40 @@ class ClientThread(Thread):
             if username == "root" and password == "root":
                 conn.send("True".encode())
                 Flag = "True"
+                log.write(ip + ":" + str(port)+"correctly authenticated"+"\n")
             else:
                 conn.send("False".encode())
+                log.write(ip + ":" + str(port) + "failed to authenticate"+"\n")
         while True:
-            data = conn.recv(2048).decode()
+            data = conn.recv(100).decode()
             print("Server received data:", data)
-            MessageList = data.split()
-            Order = MessageList[0]
-            if Order == 'Quit':
+            if data:
+                MessageList = data.split()
+                Order = MessageList[0]
+            else:
+                Order = ""
+
+            if Order == "QUIT":
+                log.write(ip + ":" + str(port) + "Order: Quit" + "\n")
                 break
-            if Order == 'LIST':
+            elif Order == 'LIST':
                 ClientThread.list_server_files(self)
+                log.write(ip + ":" + str(port) + "Order: LIST"+"\n")
                 print("List")
-            if Order == 'RETR':
+            elif Order == 'RETR':
+                MessageList = data.split()
                 ClientThread.retrive_file(self, MessageList[1])
+                log.write(ip + ":" + str(port) + "Order: Retrive file:"+MessageList[1]+"\n")
                 print("retrive")
-            if Order == 'DELE':
+            elif Order == 'DELE':
+                MessageList = data.split()
                 ClientThread.delete_file(self, MessageList[1])
+                log.write(ip + ":" + str(port) + "Order: Deleted file:" + MessageList[1]+"\n")
                 print("delete")
-            if Order == 'RMD':
+            elif Order == 'RMD':
                 ClientThread.delete_all_cached_files(self)
+                log.write(ip + ":" + str(port) + "Order: Deleted all cached file:"+"\n")
                 print("RMD")
-
-                # MESSAGE = input("Server: Enter Response from Server/Enter Quit:")
-                # if MESSAGE == 'Quit':
-                #     break
-
-                # conn.send(MESSAGE.encode())  # echo
 
     def retrive_file(self, file_name):
         host = socket.gethostbyname('ceit.aut.ac.ir')
@@ -95,6 +104,7 @@ class ClientThread(Thread):
         print("file readed")
         dataConn.send(str(len(data)).encode())
         print(len(data))
+
         dataConn.send(data)
         f.close()
 
@@ -152,7 +162,8 @@ class ClientThread(Thread):
 TCP_IP = '127.0.0.1'
 data_port = 3020
 control_port = 3021
-
+log = open("log.txt", "a")
+log.write("server Started"+"\n")
 BUFFER_SIZE = 20  # Usually 1024, but we need quick response 
 
 controlSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -173,3 +184,5 @@ while True:
     newthread = ClientThread(ip, port)
     newthread.start()
     threads.append(newthread)
+
+log.close()
