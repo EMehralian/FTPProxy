@@ -119,6 +119,7 @@ class ClientThread(Thread):
         filelist = ','.join(urls)
         dataConn.send(filelist.encode())
         ServerSocket.close()
+        dataConn.close()
 
     def delete_file(self, file_name):
         local_files_list = self.local_files()

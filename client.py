@@ -1,6 +1,7 @@
 import socket
 import GUI
 
+
 def Main():
     # form = GUI.client_GUI()
     host = '127.0.0.1'
@@ -34,7 +35,6 @@ def Main():
         ControlSocket.send(auth.encode())
         Flag = ControlSocket.recv(1000).decode()
 
-
     message = input(" ? ")
     while message != 'q':
         MessageList = message.split()
@@ -42,15 +42,11 @@ def Main():
         ControlSocket.send(message.encode())
 
         if Order == "LIST":
-            print("send LIST")
-            response = DataSocket.recv(1000)
-            print("i'm here1")
+            response = DataSocket.recv(100).decode()
             data = response
-            # while len(response) > 0:
-            #     print("i'm here2")
-            #     response = DataSocket.recv(100)
-            #     data += response
-            print("i'm here3")
+            while len(response) > 0:
+                response = DataSocket.recv(100).decode()
+                data += response
             print(data)
         elif Order == "RETR":
             print("RETR")
@@ -66,8 +62,6 @@ def Main():
         # data = ControlSocket.recv(1024).decode()
         #
         # print('Received from server: ' + data)
-
-
 
     ControlSocket.close()
 
