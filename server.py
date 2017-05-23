@@ -6,13 +6,16 @@ from os.path import isfile, join
 import re
 from time import gmtime, strftime
 
+
 class ClientThread(Thread):
     def __init__(self, ip, port):
         Thread.__init__(self)
         self.ip = ip
         self.port = port
 
-        log.write(strftime("%Y-%m-%d %H:%M:%S", gmtime())+"[+] New server socket thread started for " + ip + ":" + str(port)+"\n")
+        clientsLog.write(
+            strftime("%Y-%m-%d %H:%M:%S", gmtime()) + "[+] New server socket thread started for " + ip + ":" + str(
+                port) + "\n")
         print("[+] New server socket thread started for " + ip + ":" + str(port))
 
     def run(self):
@@ -25,42 +28,46 @@ class ClientThread(Thread):
             if username == "root" and password == "root":
                 conn.send("True".encode())
                 Flag = "True"
-                log.write(ip + ":" + str(port)+"correctly authenticated"+"\n")
+                clientsLog.write(ip + ":" + str(port) + "correctly authenticated" + "\n")
             else:
                 conn.send("False".encode())
-                log.write(ip + ":" + str(port) + "failed to authenticate"+"\n")
+                clientsLog.write(ip + ":" + str(port) + "failed to authenticate" + "\n")
         while True:
             data = conn.recv(100).decode()
-            print("Server received data:", data)
-            if data:
-                MessageList = data.split()
-                Order = MessageList[0]
-            else:
-                Order = ""
-
-            if Order == "QUIT":
-                log.write(ip + ":" + str(port) + "Order: Quit" + "\n")
+            if( not data):
+                print("connection to socket has been missed!    ")
                 break
-            elif Order == 'LIST':
-                ClientThread.list_server_files(self)
-                log.write(ip + ":" + str(port) + "Order: LIST"+"\n")
-                print("List")
-            elif Order == 'RETR':
-                MessageList = data.split()
-                ClientThread.retrive_file(self, MessageList[1])
-                log.write(ip + ":" + str(port) + "Order: Retrive file:"+MessageList[1]+"\n")
-                print("retrive")
-            elif Order == 'DELE':
-                MessageList = data.split()
-                ClientThread.delete_file(self, MessageList[1])
-                log.write(ip + ":" + str(port) + "Order: Deleted file:" + MessageList[1]+"\n")
-                print("delete")
-            elif Order == 'RMD':
-                ClientThread.delete_all_cached_files(self)
-                log.write(ip + ":" + str(port) + "Order: Deleted all cached file:"+"\n")
-                print("RMD")
+            else:
+                print("Server received data:", data)
+                if data:
+                    MessageList = data.split()
+                    Order = MessageList[0]
+                else:
+                    Order = ""
 
-    def retrive_file(self, file_name):
+                if Order == "QUIT":
+                    clientsLog.write(ip + ":" + str(port) + "Order: Quit" + "\n")
+                    break
+                elif Order == 'LIST':
+                    ClientThread.list_server_files(self, port)
+                    clientsLog.write(ip + ":" + str(port) + "Order: LIST" + "\n")
+                    print("List")
+                elif Order == 'RETR':
+                    MessageList = data.split()
+                    ClientThread.retrive_file(self, MessageList[1], port)
+                    clientsLog.write(ip + ":" + str(port) + "Order: Retrive file:" + MessageList[1] + "\n")
+                    print("retrive")
+                elif Order == 'DELE':
+                    MessageList = data.split()
+                    ClientThread.delete_file(self, MessageList[1])
+                    clientsLog.write(ip + ":" + str(port) + "Order: Deleted file:" + MessageList[1] + "\n")
+                    print("delete")
+                elif Order == 'RMD':
+                    ClientThread.delete_all_cached_files(self)
+                    clientsLog.write(ip + ":" + str(port) + "Order: Deleted all cached file:" + "\n")
+                    print("RMD")
+
+    def retrive_file(self, file_name, clientport):
         host = socket.gethostbyname('ceit.aut.ac.ir')
         request = "GET /~94131090/CN1_Project_Files/" + str(file_name) + " HTTP/1.1\r\nHost: " + host + "\r\n\r\n"
         proxy_files = self.local_files()
@@ -71,6 +78,8 @@ class ClientThread(Thread):
                 ClientThread.send_file_from_proxy(self, file_name)
                 break
         print("connecting to server")
+        serverLog.write(strftime("%Y-%m-%d %H:%M:%S", gmtime()) + "|" + ip + ":" + str(
+            clientport) + "Trying to connect to AUT server" + "\n")
         host = socket.gethostbyname('ceit.aut.ac.ir')
         port = 80
         ServerSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -90,6 +99,8 @@ class ClientThread(Thread):
                 if not data:
                     break
                 f.write(data)
+        serverLog.write(strftime("%Y-%m-%d %H:%M:%S", gmtime()) + "|" + ip + ":" + str(
+            clientport) + "read" + file_name + " from AUT server" + "\n")
         ClientThread.send_file_from_proxy(self, file_name)
 
     def send_file_from_proxy(self, file_name):
@@ -113,7 +124,8 @@ class ClientThread(Thread):
         onlyfiles = [f for f in listdir(mypath) if isfile(join(mypath, f))]
         return onlyfiles
 
-    def list_server_files(self):
+    def list_server_files(self, port):
+        serverLog.write(strftime("%Y-%m-%d %H:%M:%S", gmtime())+"|" + ip + ":" + str(port)+"Trying to connect to AUT server"+"\n")
         print("connecting to server")
         host = socket.gethostbyname('ceit.aut.ac.ir')
         port = 80
@@ -127,13 +139,21 @@ class ClientThread(Thread):
         while len(response) > 0:
             response = ServerSocket.recv(1000).decode()
             result += response
-        urls = re.findall(r'href=[\'"]?([^\'" >]+)', result)
-        print(urls)
-        urls.pop(0)
-        urls.pop(0)
-        urls.pop(0)
-        urls.pop(0)
-        urls.pop(0)
+        print(result)
+        if (result[9:12] == "200"):
+            urls = re.findall(r'href=[\'"]?([^\'" >]+)', result)
+            print(urls)
+        else:
+            print("faild to connect to AUT server")
+            urls = ""
+        serverLog.write(strftime("%Y-%m-%d %H:%M:%S", gmtime()) + "|" + ip + ":" + str(
+            port) + "got list of files form AUT server" + "\n")
+        if (len(urls) > 5):
+            urls.pop(0)
+            urls.pop(0)
+            urls.pop(0)
+            urls.pop(0)
+            urls.pop(0)
         print(urls)
         filelist = '&'.join(urls)
         listSize = len(filelist)
@@ -141,6 +161,7 @@ class ClientThread(Thread):
         dataConn.send(str(listSize).encode())
         dataConn.send(filelist.encode())
         ServerSocket.close()
+
 
     def delete_file(self, file_name):
         local_files_list = self.local_files()
@@ -162,8 +183,9 @@ class ClientThread(Thread):
 TCP_IP = '127.0.0.1'
 data_port = 3020
 control_port = 3021
-log = open("log.txt", "a")
-log.write("server Started"+"\n")
+clientsLog = open("clientsLog.txt", "a")
+serverLog = open("serverLog.txt", "a")
+clientsLog.write("server Started" + "\n")
 BUFFER_SIZE = 20  # Usually 1024, but we need quick response 
 
 controlSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -185,4 +207,4 @@ while True:
     newthread.start()
     threads.append(newthread)
 
-log.close()
+clientsLog.close()
