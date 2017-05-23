@@ -24,29 +24,28 @@ def Main():
         Flag = ControlSocket.recv(1000).decode()
 
     message = input(" ? ")
-    while message != "Quit":
-        MessageList = message.split()
-        Order = MessageList[0]
+    while True:
+        if message:
+            MessageList = message.split()
+            Order = MessageList[0]
+        else:
+            Order = ""
+            MessageList = []
         ControlSocket.send(message.encode())
-
+        if Order == "QUIT":
+            break
         if Order == "LIST":
             size = int(DataSocket.recv(100).decode())
             data = DataSocket.recv(int(size)).decode()
-            dataList=data.split('&')
+            dataList = data.split('&')
             for item in dataList:
                 print(item)
-            # print(data)
         elif Order == "RETR":
-            with open("client/"+MessageList[1], 'wb') as f:
+            with open("client/" + MessageList[1], 'wb') as f:
                 print('file opened')
                 size = int(DataSocket.recv(100).decode())
                 data = DataSocket.recv(int(size))
                 f.write(data)
-                # while True:
-                #     data = DataSocket.recv(1024)
-                #     if not data:
-                #         break
-                #     f.write(data)
             f.close()
             print("RETR")
         elif Order == "DELE":
@@ -56,8 +55,8 @@ def Main():
             controlMessage = DataSocket.recv(1000).decode()
             print(controlMessage)
             print("RMD")
-        # print("finihsed")
         message = input(" ? ")
+
 
 if __name__ == '__main__':
     Main()
