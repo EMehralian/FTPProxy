@@ -109,14 +109,15 @@ class ClientThread(Thread):
             response = ServerSocket.recv(1000).decode()
             result += response
         urls = re.findall(r'href=[\'"]?([^\'" >]+)', result)
+        print(urls)
         urls.pop(0)
         urls.pop(0)
         urls.pop(0)
         urls.pop(0)
         urls.pop(0)
         print(urls)
-        ehsan = ','.join(urls)
-        dataConn.send(ehsan.encode())
+        filelist = ','.join(urls)
+        dataConn.send(filelist.encode())
         ServerSocket.close()
 
     def delete_file(self, file_name):

@@ -1,7 +1,8 @@
 import socket
-
+import GUI
 
 def Main():
+    # form = GUI.client_GUI()
     host = '127.0.0.1'
     data_port = 3020
     control_port = 3021
@@ -42,11 +43,14 @@ def Main():
 
         if Order == "LIST":
             print("send LIST")
-            response = DataSocket.recv(1000).decode()
+            response = DataSocket.recv(1000)
+            print("i'm here1")
             data = response
-            while len(response) > 0:
-                response = DataSocket.recv(1000).decode()
-                data += response
+            # while len(response) > 0:
+            #     print("i'm here2")
+            #     response = DataSocket.recv(100)
+            #     data += response
+            print("i'm here3")
             print(data)
         elif Order == "RETR":
             print("RETR")
