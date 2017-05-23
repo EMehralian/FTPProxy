@@ -27,7 +27,6 @@ class ClientThread(Thread):
                 conn.send("False".encode())
         while True:
             data = conn.recv(2048).decode()
-
             print("Server received data:", data)
             MessageList = data.split()
             Order = MessageList[0]
@@ -70,15 +69,25 @@ class ClientThread(Thread):
         ServerSocket.connect((host, port))
         ServerSocket.send(request.encode())
         with open(file_name, 'wb') as f:
+            print('receiving data...')
+            data = ServerSocket.recv(1024)
+            # data = re.compile('.*\n\n', ' ', data)
+            linend = re.compile(b'\r\n\r\n')
+            data = (linend.split(data, 1))
+            data = data[1]
+            f.write(data)
             while True:
                 print('receiving data...')
                 data = ServerSocket.recv(1024)
-                re.sub(r'.*\n\n', '', data.decode())
-                print('data=%s', (data))
+                # data = re.compile('.*\n\n', ' ', data)
                 if not data:
                     break
+                linend = re.compile(b'\r\n\r\n')
+                data = (linend.split(data, 1))
+                data = data[1]
+                print(data)
                 # write data to a file
-                f.write(data)
+                f.write(data[1])
 
     def local_files(self):
         mypath = "File/"
@@ -110,16 +119,6 @@ class ClientThread(Thread):
         dataConn.send(ehsan.encode())
         ServerSocket.close()
 
-
-    # def return_server_files(self, file_list):
-    #     TCP_IP = '127.0.0.1'
-    #     TCP_PORT = 6021
-    #     BUFFER_SIZE = 20  # Usually 1024, but we need quick response
-    #
-    #     tcpServer = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    #     tcpServer.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    #     tcpServer.bind((TCP_IP, TCP_PORT))
-
     def delete_file(self, file_name):
         local_files_list = self.local_files()
         if (file_name in local_files_list):
@@ -131,7 +130,6 @@ class ClientThread(Thread):
         local_files_list = self.local_files()
         for file in local_files_list:
             self.delete_file(file)
-
 
 # Multithreaded Python server : TCP Server Socket Program Stub
 TCP_IP = '127.0.0.1'
@@ -148,8 +146,6 @@ threads = []
 dataSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 dataSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 dataSocket.bind((TCP_IP, data_port))
-
-
 
 while True:
     controlSocket.listen(4)
