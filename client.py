@@ -3,7 +3,7 @@ import socket
 
 class client:
     def Main(self):
-        host = '127.0.0.1'
+        host = '172.20.10.10'
         data_port = 3020
         control_port = 3021
 
@@ -15,14 +15,14 @@ class client:
         Flag = "False"
 
         while Flag == "False":
-            username = input("username")
-            password = input("password")
+            username = client.Send(self, "username")
+            password = client.Send(self, "password")
             auth = [username, password]
             auth = ','.join(auth)
             ControlSocket.send(auth.encode())
             Flag = ControlSocket.recv(1000).decode()
 
-        message = input(" ? ")
+        message = client.Send(self, "?")
         while True:
             if message:
                 MessageList = message.split()
@@ -38,25 +38,30 @@ class client:
                 data = DataSocket.recv(int(size)).decode()
                 dataList = data.split('&')
                 for item in dataList:
-                    print(item)
+                    client.display(self, item)
             elif Order == "RETR":
                 with open("client/" + MessageList[1], 'wb') as f:
-                    print('file opened')
+                    client.display(self, "file opened")
                     size = int(DataSocket.recv(100).decode())
                     data = DataSocket.recv(int(size))
                     f.write(data)
                 f.close()
-                print("RETR")
+                client.display(self, "RETR")
             elif Order == "DELE":
                 controlMessage = DataSocket.recv(1000).decode()
-                print(controlMessage)
+                client.display(self, controlMessage)
             elif Order == "RMD":
                 controlMessage = DataSocket.recv(1000).decode()
-                print(controlMessage)
-                print("RMD")
-            message = input(" ? ")
+                client.display(self, controlMessage)
+                client.display(self, "RMD")
+            message = client.Send(self, "?")
+
+    def Send(self, text):
+        return input(text)
+
+    def display(self, text):
+        print(text)
 
 
 if __name__ == '__main__':
-
     client.Main(client)
